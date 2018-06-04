@@ -32,27 +32,31 @@ def find_hand(image, graph, sess):
     return np.squeeze(boxes), np.squeeze(scores)
 
 def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, im_height, image_np):
+    hands = []
     for i in range(num_hands_detect):
         if (scores[i] > score_thresh):
             (left, right, top, bottom) = (boxes[i][1] * im_width, boxes[i][3] * im_width,
                                           boxes[i][0] * im_height, boxes[i][2] * im_height)
             p1 = (int(left), int(top))
-            p2 = (int(right), int(bottom))
-            cv2.rectangle(image_np, p1, p2, (77, 255, 9), 3, 1)
+            p2 = (int(right), int(top))
+            p3 = (int(left), int(bottom))
+            p4 = (int(right), int(bottom))
+            hands.append((p1, p2, p3, p4))
+            
+            cv2.rectangle(image_np, p1, p4, (77, 255, 9), 3, 1)
 
 
 cam = cv2.VideoCapture(0)
 
 cv2.namedWindow("win", cv2.WINDOW_NORMAL)
-cv2.resizeWindow("win", 600, 600)
 detection_graph, sess, = load_inference_graph()
 
 while True:
     ret, frame = cam.read()
-    frame = cv2.flip(frame, 1)
+    # frame = cv2.flip(frame, 1)
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    boxes, scores = find_hand(frame, detection_graph, sess)
-    draw_box_on_image(1, .2, scores, boxes, 640, 480, frame)
+    box_proposals, scores = find_hand(frame, detection_graph, sess)
+    hands = draw_box_on_image(1, .2, scores, box_proposals, 640, 480, frame)
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     cv2.imshow("win", frame)
     k = cv2.waitKey(1)
