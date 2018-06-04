@@ -1,10 +1,14 @@
 import cv2
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
+import tensorflow as tf
+import numpy as np
+import detect
 import time
 
-cascPath = '../data//haarcascades/haarcascade_frontalface_default.xml'
+cascPath = '../data/haarcascades/haarcascade_frontalface_default.xml'
 faceCascade = cv2.CascadeClassifier(cascPath)
+detection_graph, sess, = detect.load_inference_graph()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -36,8 +40,41 @@ else:
         tracker = cv2.TrackerGOTURN_create()
 
 
+
+def find_hand(image, graph, sess):
+    image_tensor = graph.get_tensor_by_name('image_tensor:0')
+    detection_boxes = graph.get_tensor_by_name('detection_boxes:0')
+    detection_scores = graph.get_tensor_by_name('detection_scores:0')
+    detection_classes = graph.get_tensor_by_name('detection_classes:0')
+    num_detections = graph.get_tensor_by_name('num_detections:0')
+
+    image_expanded = np.expand_dims(image, axis=0)
+
+    (boxes, scores, classes, num) = sess.run(
+            [detection_boxes, detection_scores,
+                detection_classes, num_detections],
+            feed_dict={image_tensor: image_expanded})
+    return np.squeeze(boxes), np.squeeze(scores)
+
+
+def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, im_height, image_np):
+    hands = []
+    for i in range(num_hands_detect):
+        if (scores[i] > score_thresh):
+            (left, right, top, bottom) = (boxes[i][1] * im_width, boxes[i][3] * im_width,
+                                          boxes[i][0] * im_height, boxes[i][2] * im_height)
+            p1 = (int(left), int(top))
+            p2 = (int(right), int(top))
+            p3 = (int(left), int(bottom))
+            p4 = (int(right), int(bottom))
+            hands.append((p1, p2, p3, p4))
+
+            #cv2.rectangle(image_np, p1, p4, (77, 255, 9), 3, 1)
+    return hands
+
 def background_thread():
     capture = cv2.VideoCapture(0)
+
     global x1
     global y1
     global w1
@@ -45,8 +82,17 @@ def background_thread():
     global trackingFace
     while True:
        frms += 1
-       #f not trackingFace or frms % 50 == 0:
        ret, image = capture.read()
+       height, width = image.shape[:2]
+       image = cv2.flip(image, 1)
+       image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+       boxes, scores = find_hand(image, detection_graph, sess)
+       hands = draw_box_on_image(1, .2, scores,
+                                 boxes, width, height, image)
+
+       image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+       #facial detection
        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
        faces = faceCascade.detectMultiScale(
             gray, 1.3, 5
@@ -72,8 +118,15 @@ def background_thread():
          y1 = y
          w1 = w
          #cv2.rectangle(frame, p1, p2, (249, 151, 208), 2, 1)
+       one_hand = hands[0]
+       top_left_x = one_hand[0][0]
+       top_left_y = one_hand[0][1]
+       area = abs(one_hand[3][0] - top_left_x *
+               one_hand[3][1] - top_left_y)
+
        cv2.imshow('Camera stream', image)
-       socketio.emit('message', {'x': x1, 'y': y1, 'area': w1})
+       socketio.emit('message', {'x': top_left_x
+           , 'y': top_left_y, 'area': area})
        time.sleep((1000.0 / 30) / 1000)
 
 @socketio.on('connect')
