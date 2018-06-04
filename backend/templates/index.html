@@ -336,37 +336,6 @@ if (navigator.getUserMedia) {
                     yCoords.push(positionHistory[i].y);
                  }
 
-                 var diffX = currX - lastX;
-                 var diffY = currY - lastY;
-                 if (prelaunch) {
-                     timeBetween++;
-                 }
-                 if (Math.abs(diffX) >= 20 && prelaunch && !launch) {
-                     //if ((Math.atan(diffY/diffX) * launchDir) < 0) {
-                     console.log("in launch phase");
-                     launch = 1;
-                     prelaunch = 0;
-                     //launchDir = Math.atan(diffY / diffY);
-                     //launchMag = Math.sqrt(diffX ^ 2 + diffY ^ 2);
-                     //velocity = launchMag / timeBetween;
-                     //console.log("velocity is: " + velocity + " mag is: " +
-                     //launchMag + " dir is: " + launchDir);
-
-                     //timeBetween = 1;
-                     //finishSpotX = preLaunchX + velocity * 5 * Math.cos(launchDir);
-                     //finishSpotY = preLaunchY + velocity * 5 * Math.sin(launchDir)
-                         //- (1 / 2 * 9.18 * 25);
-                 } else if (Math.abs(diffX) >= 20) {
-                     prelaunch = 1;
-                     preLaunchX = currX;
-
-                     preLaunchY = currY;
-                     //launchDir = Math.atan(diffY / diffX);
-                     console.log("setting up pre launch phase: launchX is: " +
-                     preLaunchX + " launch y is: " + preLaunchY);
-                     //launchDir);
-                 }
-
                  var posX = math.mean(xCoords);
                  var posY = math.mean(yCoords);
                  targetY = posY / 5;
