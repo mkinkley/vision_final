@@ -6,7 +6,7 @@ import numpy as np
 import detect
 import time
 
-cascPath = '../data/haarcascades/haarcascade_frontalface_default.xml'
+cascPath = 'backend/opencv/data/haarcascades/haarcascade_frontalface_default.xml'
 faceCascade = cv2.CascadeClassifier(cascPath)
 detection_graph, sess, = detect.load_inference_graph()
 
@@ -21,23 +21,6 @@ trackingFace = 0
 frms = 0
 (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
 
-tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-tracker_type = tracker_types[2]
-if int(minor_ver) < 3:
-    tracker = cv2.Tracker_create(tracker_type)
-else:
-    if tracker_type == 'BOOSTING':
-        tracker = cv2.TrackerBoosting_create()
-    if tracker_type == 'MIL':
-        tracker = cv2.TrackerMIL_create()
-    if tracker_type == 'KCF':
-        tracker = cv2.TrackerKCF_create()
-    if tracker_type == 'TLD':
-        tracker = cv2.TrackerTLD_create()
-    if tracker_type == 'MEDIANFLOW':
-        tracker = cv2.TrackerMedianFlow_create()
-    if tracker_type == 'GOTURN':
-        tracker = cv2.TrackerGOTURN_create()
 
 
 
@@ -90,7 +73,7 @@ def background_thread():
        hands = draw_box_on_image(1, .2, scores,
                                  boxes, width, height, image)
 
-       image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+       #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
        #facial detection
        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -118,15 +101,16 @@ def background_thread():
          y1 = y
          w1 = w
          #cv2.rectangle(frame, p1, p2, (249, 151, 208), 2, 1)
-       one_hand = hands[0]
-       top_left_x = one_hand[0][0]
-       top_left_y = one_hand[0][1]
-       area = abs(one_hand[3][0] - top_left_x *
-               one_hand[3][1] - top_left_y)
-
+       if len(hands) > 0:
+        one_hand = hands[0]
+        top_left_x = one_hand[0][0]
+        top_left_y = one_hand[0][1]
+        area = abs(one_hand[3][0] - top_left_x *
+              one_hand[3][1] - top_left_y)
+        socketio.emit('message', {'x': top_left_x
+            , 'y': top_left_y, 'area': area})
        cv2.imshow('Camera stream', image)
-       socketio.emit('message', {'x': top_left_x
-           , 'y': top_left_y, 'area': area})
+
        time.sleep((1000.0 / 30) / 1000)
 
 @socketio.on('connect')
