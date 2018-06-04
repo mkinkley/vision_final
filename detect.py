@@ -53,10 +53,11 @@ detection_graph, sess, = load_inference_graph()
 
 while True:
     ret, frame = cam.read()
-    # frame = cv2.flip(frame, 1)
+    frame = cv2.flip(frame, 1)
+    h, w = frame.shape[:2]
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     box_proposals, scores = find_hand(frame, detection_graph, sess)
-    hands = draw_box_on_image(1, .2, scores, box_proposals, 640, 480, frame)
+    hands = draw_box_on_image(1, .2, scores, box_proposals, w, h, frame)
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
     cv2.imshow("win", frame)
     k = cv2.waitKey(1)
