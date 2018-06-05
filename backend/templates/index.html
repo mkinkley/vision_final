@@ -6,7 +6,13 @@
     <style>
         body { margin: 0; }
         canvas { width: 100%; position: absolute; top: 0; }
-        video { width: 100%; }
+        video {
+            width: 100%;
+            transform: rotateY(180deg);
+            -webkit-transform: rotateY(180deg); /* Safari and Chrome */
+            -moz-transform: rotateY(180deg); /* Firefox */
+        }
+}
     </style>
 </head>
 <body>
@@ -31,15 +37,9 @@
           var lastScale;
           var lastX = 0;
           var lastY = 0;
-          var timeBetween = 1;
-          var launch = 0;
-          var prelaunch = 0;
-          var launchDir = 0;
-          var launchMag = 0;
-          var finishSpotX = 0;
-          var finishSpotY = 0;
-          var t = 0;
-          var preLaunchX, preLaunchY, velocity;
+          var ball;
+          var newPart;
+
 
 
 function initScene(width, height) {
@@ -50,6 +50,7 @@ function initScene(width, height) {
     length = height;
     // Set the camera to 400 units along `z` axis
     camera.position.set(0, 0, 400);
+
 
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -64,223 +65,88 @@ function initLight() {
     light.position.set(400, 100, 1000);
     light.castShadow = true;
     scene.add(light);
+
+    // adding in axes so we can see the coordinate system better!
+
+    var axes = new THREE.AxisHelper(325);
+
+    axes.position.set(0, 0, 0);
+    var material = new THREE.SpriteMaterial({
+              color: 0xFF0000
+          });
+    var newPart = new THREE.Sprite(material);
+    newPart.position.x = -wide/5;
+    newPart.position.y = length/120;
+    newPart.position.z = 0;
+    newPart.scale.x = newPart.scale.y = 4 + 4;
+    scene.add(newPart);
+    scene.add(axes);
 }
 
+// initializes the particles on the screen
 function initParticles() {
-    var earthMaterial = new THREE.MeshLambertMaterial({color: 0xF46CE6});
-    // Create a sphere 25 units in radius and 16 segments
-    // both horizontally and vertically.
-    var earthGeometry = new THREE.SphereGeometry(25, 16, 16);
-    earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
-    earthMesh.receiveShadow = true;
-    earthMesh.castShadow = true;
-    // Add Earth to the scene
-    scene.add(earthMesh);
-}
-
-function initEarth() {
-    // Load Earth texture and create material from it
-
-    var earthMaterial = new THREE.MeshLambertMaterial({color: 0xF46CE6});
-    // Create a sphere 25 units in radius and 16 segments
-    // both horizontally and vertically.
-    var earthGeometry = new THREE.SphereGeometry(25, 16, 16);
-    earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
-    earthMesh.receiveShadow = true;
-    earthMesh.castShadow = true;
-    // Add Earth to the scene
-    scene.add(earthMesh);
-
-     var PI2 = Math.PI * 2;
-       group = new THREE.Object3D();
+   group = new THREE.Object3D();
       scene.add(group);
-      for (var i = 0; i < 1000; i++) {
-        var material = new THREE.SpriteMaterial({
-          color: Math.random() * 0x808008 + 0x808080
-        });
-        particle = new THREE.Sprite(material);
-        particle.position.x = Math.random() * 100;
-        if (i % 3 === 0) {
-            particle.position.x = particle.position.x * -1;
-
-        }
-        if (i % 2 === 0) {
-            if (particle.position.x < 0) {
-                particle.position.x -= 100;
-            } else {
-                particle.position.x += 100;
-            }
-        }
-        console.log(particle.position.x);
-        particle.position.y = Math.random() * 250 - 150;
-        particle.position.z = Math.random() * 250 - 50;
-        particle.scale.x = particle.scale.y = Math.random() * 10 + 10;
-        group.add(particle);
+      for (var i = 0; i < 20; i++) {
+          var material = new THREE.SpriteMaterial({
+              color: Math.random() * 0x808008 + 0x808080
+          });
+          particle = new THREE.Sprite(material);
+          particle.position.x = Math.random() * 100;
+          if (i % 3 === 0) {
+              particle.position.x = particle.position.x * -1;
+          }
+          if (i % 2 === 0) {
+              if (particle.position.x < 0) {
+                  particle.position.x -= 100;
+              } else {
+                  particle.position.x += 100;
+              }
+          }
+          console.log(particle.position.x);
+          particle.position.y = Math.random() * 250 - 150;
+          particle.position.z = Math.random() * 250 - 50;
+          console.log(particle.position.x, particle.position.y);
+          particle.scale.x = particle.scale.y = Math.random() * 10 + 10;
+          group.add(particle);
       }
-}
-
-function initEarth2() {
-    // Load Earth texture and create material from it
-    var earthMaterial = new THREE.MeshLambertMaterial({color: 0xF46CE6});
-    // Create a sphere 25 units in radius and 16 segments
-    // both horizontally and vertically.
-    var earthGeometry = new THREE.SphereGeometry(25, 16, 16);
-    earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
-    earthMesh.receiveShadow = true;
-    earthMesh.castShadow = true;
-    // Add Earth to the scene
-    scene.add(earthMesh);
 }
 
 // Update position of objects in the scene
 function update() {
+
+    if(newPart) {
+        scene.remove(newPart);
+    }
     /*
-    launch = 0;
-    if (positionHistory.length === 0) {
-        return;
-    }
-    earthRotY += 0.007;
-    earthMesh.rotation.y = earthRotY;
-    // screen only starts at like 500 so have to start there or set
-    // to where we want otherwise
-    goal_x = 500;
-    goal_y = currY;
-    if (currX >= 500) {
-        goal_x = currX;
-    }
-    // if its less than 1000 then we use one equation to get the new
-    // x coord
-    if (goal_x <= 1000) {
-        goal_x = 78038850 + ((-404.7419 - 78038850) /
-            (1 + Math.pow((goal_x /2106957), 1.593)));
-
-    } else if (goal_x > 1000) {
-        goal_x = 903 + ((-28780020 - 903) /
-            (1 + Math.pow((goal_x /0.03741775), 1.0178)));
-
-    }
-
-    if (currY > (length/3)) {
-        goal_y = currY - 2*(length / 5);
+    var material = new THREE.SpriteMaterial({
+              color: 0x00FF00
+          });
+    newPart = new THREE.Sprite(material);
+    if (currX < wide - 150) {
+        newPart.position.x = (-(wide - currX)/ 4) + 10;
     } else {
-        goal_y = -currY + length/4;
-    }
-    if (launch) {
-        t++;
-        /*
-        var finishY = finishSpotY;
-        var prelaunchYTransfer = preLaunchY;
-        if (finishY > (length/3)) {
-            finishY = finishY - 2*(length / 5);
-        } else {
-            finishY = -finishY + length/4;
-        }
-        if (prelaunchYTransfer > (length/3)) {
-            prelaunchYTransfer =prelaunchYTransfer- 2*(length / 5);
-        } else {
-            prelaunchYTransfer = -prelaunchYTransfer + length/4;
-        }
-        console.log("sin is: " + Math.sin(launchDir));
-        var y = prelaunchYTransfer + velocity * t * Math.sin(launchDir)
-                            - (1/2 * 9.18 * t^2);
-        var finishX = finishSpotX;
-        var prelaunchXTransfer = preLaunchX;
-        if (finishX < 500) {
-            finishX = 500;
-        }
-        if (finishX <= 1000) {
-            finishX = 78038850 + ((-404.7419 - 78038850) /
-            (1 + Math.pow((finishX /2106957), 1.593)));
 
-        } else if (finishX > 1000) {
-            finishX = 903 + ((-28780020 - 903) /
-                (1 + Math.pow((finishX /0.03741775), 1.0178)));
-        }
-        if (prelaunchXTransfer < 500) {
-            prelaunchXTransfer = 500;
-        }
-        if (prelaunchXTransfer <= 1000) {
-            prelaunchXTransfer = 78038850 + ((-404.7419 - 78038850) /
-            (1 + Math.pow((prelaunchXTransfer /2106957), 1.593)));
-
-        } else if (prelaunchXTransfer > 1000) {
-            prelaunchXTransfer = 903 + ((-28780020 - 903) /
-                (1 + Math.pow((prelaunchXTransfer /0.03741775), 1.0178)));
-        }
-        var x = prelaunchXTransfer + velocity * t * Math.cos(launchDir);
-        if (Math.abs(x - finishX) < 3) {
-            launch = 0;
-            preLaunch = 0;
-        }
-
-        var prelaunchYTransfer = preLaunchY;
-        if (prelaunchYTransfer > (length/3)) {
-            prelaunchYTransfer =prelaunchYTransfer- 2*(length / 5);
-        } else {
-            prelaunchYTransfer = -prelaunchYTransfer + length/4;
-        }
-        var prelaunchXTransfer = preLaunchX;
-        if (prelaunchXTransfer < 500) {
-            prelaunchXTransfer = 500;
-        }
-        if (prelaunchXTransfer <= 1000) {
-            prelaunchXTransfer = 78038850 + ((-404.7419 - 78038850) /
-            (1 + Math.pow((prelaunchXTransfer /2106957), 1.593)));
-
-        } else if (prelaunchXTransfer > 1000) {
-            prelaunchXTransfer = 903 + ((-28780020 - 903) /
-                (1 + Math.pow((prelaunchXTransfer /0.03741775), 1.0178)));
-        }
-        var velocityCos = 0.07 * t * Math.cos(Math.PI/ 3);
-        var velocitySin = 0.07 * t * Math.sin(Math.PI / 3);
-        var x = prelaunchXTransfer;
-        var y = prelaunchYTransfer;
-        if (prelaunchXTransfer > 0) {
-            x -= velocityCos;
-        } else {
-            x += velocityCos;
-        }
-        if (prelaunchYTransfer > 0) {
-            y -= velocitySin - .5 * 9.81 * t^2;
-        } else {
-            y += velocitySin - .5 * 9.81 * t^2;
-        }
-        console.log(" x is: " + x + " and y is: " + y);
-        if (x < -wide/4 || x > wide/4) {
-            launch = 0;
-            prelaunch = 0;
-            x = x < -wide/4 ? -wide/4 : wide/4;
-        }
-        if (y < -length / 6 || y > length/6) {
-            launch = 0;
-            prelaunch = 0;
-            y = y < -length/6 ? -length/6 : length/6;
-        }
-        console.log(" x is: " + x + " and y is: " + y);
-        earthMesh.position.x = x;
-        earthMesh.position.y = y;
-        earthMesh.scale.set(scale, scale, scale);
-
-    } else {
-        var position = {x: lastX, y: lastY};
-        var target = {x: goal_x, y: goal_y};
-        var tween = new TWEEN.Tween(position).to(target, 3000);
-
-        tween.onUpdate(function () {
-            earthMesh.position.x = position.x;
-            earthMesh.position.y = position.y;
+        console.log("now is blue and "  + newPart.position.x);
+        var material2 = new THREE.SpriteMaterial({
+            color: 0x0000FF
         });
-        earthMesh.position.x = goal_x;
-        earthMesh.position.y = goal_y;
-        earthMesh.scale.set(scale, scale, scale);
-    }
-    var childrens = group.children;
-    for (let child = 0; child < childrens.length; child++) {
-        childrens[child].position.x += lastX - currX;
-        childrens[child].position.y += lastY - currY;
-
+        newPart = new THREE.Sprite(material2);
+        newPart.position.x = (currX - (wide-150)) / 2;
     }
     */
+
+    var mapped_x = currX/2;
+    var mapped_y =0;
+    var material = new THREE.SpriteMaterial({
+              color: 0x00FF00
+          });
+    newPart = new THREE.Sprite(material);
+    newPart.position.x = mapped_x;
+    newPart.position.y = mapped_y;
+    newPart.scale.x = newPart.scale.y = 100 + 100;
+    scene.add(newPart);
+
 }
 
 // Redraw entire scene
@@ -327,37 +193,10 @@ if (navigator.getUserMedia) {
                  currX = data.x;
                  currY = data.y;
 
-                 if (positionHistory.length > 10) {
-                     positionHistory.shift();
-                 }
-                 var xCoords = [], yCoords = [];
-                 for (var i = math.max(positionHistory.length - 1, 0); i < positionHistory.length; i++) {
-                    xCoords.push(positionHistory[i].x);
-                    yCoords.push(positionHistory[i].y);
-                 }
-
-                 var posX = math.mean(xCoords);
-                 var posY = math.mean(yCoords);
-                 targetY = posY / 5;
-                 targetX = posX / 5;
-                 //console.log("targets:");
-                 //console.log(targetY, targetX);
-
-                 var targetPos = [posX, posY];
-                 if (!lastPos) {
-                    lastPos = targetPos;
-                 }
-                 if (!lastScale) {
-                     lastScale = data.area;
-                 }
-                 diffMove = [(targetPos[0] - lastPos[0]) / 4,
-                     (targetPos[1] - lastPos[1]) / 4];
-
                  console.log(data);
-                 scale = data.area/lastScale;
-                 //console.log(scale);
-                 //console.log("curr pos");
-                 //console.log(earthMesh.position.x, earthMesh.position.y)
+                 scale = data.area / 1000;
+
+                 //console.log("cur data points are: " + currX + " , y = " + currY);
 
             });
       </script>

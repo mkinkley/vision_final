@@ -88,6 +88,7 @@ def background_thread():
 
        # Loop over all faces and check if the area for this
        # face is the largest so far
+       # then you want to not send info over if what hands detected was actually a face
        for (_x, _y, _w, _h) in faces:
           if _w * _h > maxArea and _w > 0 and _h > 0:
             x = int(_x)
@@ -100,15 +101,18 @@ def background_thread():
          x1 = x + 500
          y1 = y
          w1 = w
-         #cv2.rectangle(frame, p1, p2, (249, 151, 208), 2, 1)
        if len(hands) > 0:
         one_hand = hands[0]
         top_left_x = one_hand[0][0]
         top_left_y = one_hand[0][1]
-        area = abs(one_hand[3][0] - top_left_x *
-              one_hand[3][1] - top_left_y)
+        top_right_x = one_hand[1][0]
+        bottom_left_y = one_hand[2][1]
+        length_y = bottom_left_y - top_left_y
+        length_x = top_left_x - top_right_x
+        area = length_x * length_y
+        #if (abs(top_left_x - x1) > 20 and abs(top_left_y - y1) > 20):
         socketio.emit('message', {'x': top_left_x
-            , 'y': top_left_y, 'area': area})
+                , 'y': top_left_y, 'area': area})
        cv2.imshow('Camera stream', image)
 
        time.sleep((1000.0 / 30) / 1000)
