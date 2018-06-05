@@ -7,7 +7,7 @@ def load_inference_graph():
     detection_graph = tf.Graph()
     with detection_graph.as_default():
         od_graph_def = tf.GraphDef()
-        with tf.gfile.GFile("hand_graph/frozen_inference_graph.pb", 'rb') as fid:
+        with tf.gfile.GFile("backend/frozen_inference_graph.pb", 'rb') as fid:
             serialized_graph = fid.read()
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
@@ -45,25 +45,3 @@ def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, i
             
             # cv2.rectangle(image_np, p1, p4, (77, 255, 9), 3, 1)
     return hands
-
-
-# cam = cv2.VideoCapture(0)
-#
-# cv2.namedWindow("win", cv2.WINDOW_NORMAL)
-# detection_graph, sess, = load_inference_graph()
-
-# while True:
-#     ret, frame = cam.read()
-#     frame = cv2.flip(frame, 1)
-#     h, w = frame.shape[:2]
-#     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#     box_proposals, scores = find_hand(frame, detection_graph, sess)
-#     hands = draw_box_on_image(1, .2, scores, box_proposals, w, h, frame)
-#     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-#     cv2.imshow("win", frame)
-#     k = cv2.waitKey(1)
-#     if k%256 == 27:
-#         break
-#
-# cam.release()
-# cv2.destroyAllWindows()

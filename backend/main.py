@@ -21,23 +21,20 @@ trackingFace = 0
 frms = 0
 (major_ver, minor_ver, subminor_ver) = (cv2.__version__).split('.')
 
-# tracker_types = ['BOOSTING', 'MIL', 'KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
-# tracker_type = tracker_types[2]
-# if int(minor_ver) < 3:
-#     tracker = cv2.Tracker_create(tracker_type)
-# else:
-#     if tracker_type == 'BOOSTING':
-#         tracker = cv2.TrackerBoosting_create()
-#     if tracker_type == 'MIL':
-#         tracker = cv2.TrackerMIL_create()
-#     if tracker_type == 'KCF':
-#         tracker = cv2.TrackerKCF_create()
-#     if tracker_type == 'TLD':
-#         tracker = cv2.TrackerTLD_create()
-#     if tracker_type == 'MEDIANFLOW':
-#         tracker = cv2.TrackerMedianFlow_create()
-#     if tracker_type == 'GOTURN':
-#         tracker = cv2.TrackerGOTURN_create()
+def find_hand(image, graph, sess):
+    image_tensor = graph.get_tensor_by_name('image_tensor:0')
+    detection_boxes = graph.get_tensor_by_name('detection_boxes:0')
+    detection_scores = graph.get_tensor_by_name('detection_scores:0')
+    detection_classes = graph.get_tensor_by_name('detection_classes:0')
+    num_detections = graph.get_tensor_by_name('num_detections:0')
+
+    image_expanded = np.expand_dims(image, axis=0)
+
+    (boxes, scores, classes, num) = sess.run(
+            [detection_boxes, detection_scores,
+                detection_classes, num_detections],
+            feed_dict={image_tensor: image_expanded})
+    return np.squeeze(boxes), np.squeeze(scores)
 
 def background_thread():
     capture = cv2.VideoCapture(0)
@@ -57,7 +54,7 @@ def background_thread():
        hands = detect.draw_box_on_image(1, .2, scores,
                                  boxes, width, height, image)
 
-       image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+       #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
        #facial detection
        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -84,6 +81,7 @@ def background_thread():
          x1 = x + 500
          y1 = y
          w1 = w
+<<<<<<< HEAD
          if len(hands) > 0:
             one_hand = hands[0]
             top_left_x = one_hand[0][0]
